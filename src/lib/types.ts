@@ -34,20 +34,18 @@ export type PickRevealQuestion = {
   prompt: string
   type: 'text' | 'qcm' | 'scale'
   selectedBySelf: boolean
-  unavailable: boolean
 }
 
 export type RevealPayload = {
   total: number
   index: number
-  selfAcknowledged: boolean
-  partnerAcknowledged: boolean
+  selfCompleted: boolean
+  partnerCompleted: boolean
   current: {
     position: number
-    pickedBy: PlayerSlot
     questionId: number
     prompt: string
-    answers: Record<PlayerSlot, AnswerPayload>
+    partnerAnswer: AnswerPayload
   } | null
 }
 

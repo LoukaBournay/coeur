@@ -2,7 +2,6 @@ import {
   startTransition,
   useEffect,
   useEffectEvent,
-  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -59,18 +58,6 @@ function App() {
   const currentQuestion = sessionState?.currentQuestion ?? null
   const revealData = sessionState?.reveal ?? null
   const pickRevealData = sessionState?.pickReveal ?? null
-
-  const selfLabel = useMemo(
-    () => (sessionState?.session.playerSlot === 'A' ? 'Toi (A)' : 'Toi (B)'),
-    [sessionState?.session.playerSlot],
-  )
-  const partnerLabel = useMemo(
-    () =>
-      sessionState?.session.playerSlot === 'A'
-        ? 'Partenaire (B)'
-        : 'Partenaire (A)',
-    [sessionState?.session.playerSlot],
-  )
 
   const applySessionState = (nextState: SessionState | null) => {
     startTransition(() => {
@@ -320,10 +307,6 @@ function App() {
   }
 
   const handleTogglePick = (question: PickRevealQuestion) => {
-    if (question.unavailable && !question.selectedBySelf) {
-      return
-    }
-
     setPickSelection((current) => {
       if (current.includes(question.id)) {
         return current.filter((id) => id !== question.id)
@@ -646,25 +629,21 @@ function App() {
           <span className="session-chip">Fin de partie</span>
           <span className="muted">
             {pickRevealData.pickedCountPartner >= 3
-              ? 'Le partenaire a verrouille ses 3 choix'
+              ? 'Le partenaire a choisi ses 3 questions'
               : 'Le partenaire choisit encore'}
           </span>
         </div>
 
-        <h2>Choisis 3 questions du partenaire a reveler</h2>
+        <h2>Choisis 3 questions dont tu veux voir sa reponse</h2>
         <p className="muted">
-          Vous revelerez ensuite les reponses une par une, dans le meme ordre pour
-          vous deux.
+          Tes 3 choix sont pour toi. Le partenaire fait ses propres 3 choix de son
+          cote.
         </p>
 
         <div className="question-pick-grid">
           {pickRevealData.questions.map((question) => {
             const selected = pickSelection.includes(question.id)
-            const className = question.unavailable && !selected
-              ? 'pick-card locked'
-              : selected
-                ? 'pick-card selected'
-                : 'pick-card'
+            const className = selected ? 'pick-card selected' : 'pick-card'
 
             return (
               <button
@@ -694,8 +673,29 @@ function App() {
   }
 
   const renderRevealScreen = () => {
-    if (!sessionState || !revealData?.current) {
+    if (!sessionState || !revealData) {
       return null
+    }
+
+    if (revealData.selfCompleted || !revealData.current) {
+      return (
+        <section className="panel flow-panel">
+          <div className="progress-row">
+            <span className="session-chip">Tes revelations sont finies</span>
+            <span className="muted">
+              {revealData.partnerCompleted
+                ? 'Le partenaire a aussi fini.'
+                : 'Le partenaire termine encore les siennes.'}
+            </span>
+          </div>
+
+          <h2>Tu as vu tes 3 reponses.</h2>
+          <p className="muted">
+            La session se fermera quand le partenaire aura fini ses propres
+            revelations.
+          </p>
+        </section>
+      )
     }
 
     const currentReveal = revealData.current
@@ -707,44 +707,31 @@ function App() {
             Revelation {currentReveal.position + 1}/{revealData.total}
           </span>
           <span className="muted">
-            {revealData.partnerAcknowledged
-              ? 'Le partenaire est pret pour la suivante'
-              : 'Le partenaire lit encore'}
+            {revealData.partnerCompleted
+              ? 'Le partenaire a deja termine ses revelations'
+              : 'Le partenaire avance de son cote'}
           </span>
         </div>
 
         <h2>{currentReveal.prompt}</h2>
 
         <div className="reveal-grid">
-          <div className="reveal-card">
-            <span className="reveal-label">{selfLabel}</span>
-            <p>{formatAnswer(currentReveal.answers[sessionState.session.playerSlot])}</p>
-          </div>
           <div className="reveal-card accent">
-            <span className="reveal-label">{partnerLabel}</span>
-            <p>
-              {formatAnswer(
-                currentReveal.answers[
-                  sessionState.session.playerSlot === 'A' ? 'B' : 'A'
-                ],
-              )}
-            </p>
+            <span className="reveal-label">Sa reponse</span>
+            <p>{formatAnswer(currentReveal.partnerAnswer)}</p>
           </div>
         </div>
 
         <div className="actions inline-actions">
           <button
             className="primary-button"
-            disabled={busyLabel !== null || revealData.selfAcknowledged}
+            disabled={busyLabel !== null}
             onClick={() => void handleAdvanceReveal()}
           >
             {currentReveal.position + 1 === revealData.total
               ? 'Terminer'
               : 'Suivant'}
           </button>
-          {revealData.selfAcknowledged ? (
-            <span className="muted">En attente du partenaire...</span>
-          ) : null}
         </div>
       </section>
     )
