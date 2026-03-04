@@ -773,7 +773,7 @@ function App() {
           <div className="session-chip">Configuration requise</div>
           <h2>Ajoute tes variables d environnement.</h2>
           <p className="muted">
-            Cree un fichier <code>.env.local</code> avec
+            Cree un fichier <code>.env</code> avec
             <code>VITE_SUPABASE_URL</code> et
             <code>VITE_SUPABASE_ANON_KEY</code>, puis colle les scripts SQL fournis
             dans Supabase.
